@@ -5,24 +5,26 @@
         ref="table-container"
         :class="$style['table-container']"
       >
-        <table
+        <div
           :class="$style['table']"
           ref="table"
         >
-          <tbody>
-            <tr
+          <!-- <tbody> -->
+            <div
               class="vs-buf-top"
               :style="topBufferStyles"
             >
-            </tr>
-            <tr v-for="row in currentClusterArr" :key="row" >
-              <td>{{row}}</td>
-              <td>C1 {{row}}</td>
-              <td>C2 {{row}}</td>
-            </tr>
-            <tr :style="bottomBufferStyles"></tr>
-          </tbody>
-        </table>
+            </div>
+            <div class="cluster-container">
+              <div v-for="row in currentClusterArr" :key="row" :class="$style['scroll-row']">
+                <div>{{row}}</div>
+                <div>C1 {{row}}</div>
+                <div>C2 {{row}}</div>
+              </div>
+            </div>
+            <div :style="bottomBufferStyles"></div>
+          <!-- </tbody> -->
+        </div>
       </div>
     </div>
     <div
@@ -39,6 +41,7 @@
           <b>Cluster size:</b>
           {{ clusterSize }}
         </div>
+        <div><b>Height of one Row:</b> {{ heightOfRowPx }}</b></div>
         <div><b>Full Rows Height size:</b> {{ rowsCount * heightOfRowPx }}</div>
         <div><b>TopBuffer size:</b> {{ topBufferStyles.height }}</div>
         <div><b>BottomBuffer size:</b> {{ bottomBufferStyles.height }}</div>
@@ -56,11 +59,8 @@ export default {
 
     const scrollPosition = 0;
 
-    // TODO высчитывать по вставке одной строки
     const heightOfRowPx = -1;
 
-    // TODO расчитывать на основе высоты экрана 
-    // и количества строк которые влезают в один экран
     const blockHeight = 0;
     // TODO добавить скролл на ресайз 
     return {
@@ -93,7 +93,7 @@ export default {
       let height = 0;
       if (currentCluster != 0) {
         height = clusterSize * currentCluster * heightOfRowPx - bufferBetweenClusters * heightOfRowPx;
-      }      
+      }
       return {height: `${height}px`};
     },
     bottomBufferStyles() {
@@ -102,6 +102,7 @@ export default {
       if (currentCluster < countOfClusters - 1) {
         const fullHeight = rowsCount * heightOfRowPx;
         const drawedBottom = currentCluster * clusterSize * heightOfRowPx - bufferBetweenClusters * heightOfRowPx;
+        console.log(drawedBottom);
         height = fullHeight - drawedBottom;
       }
 
@@ -126,7 +127,12 @@ export default {
     scrollBlock.addEventListener('scroll', this.onScroll);
     window.addEventListener('resize', this.onResize);
     this.onResize();
-    this.heightOfRowPx = this.$refs.table.querySelector('.vs-buf-top').nextElementSibling.offsetHeight;
+    const firstRow = this.$refs.table.querySelector('.cluster-container').children[0];
+    if (firstRow) {
+      this.heightOfRowPx = firstRow.offsetHeight;
+    } else {
+      this.heightOfRowPx = 0;
+    }    
   },
   beforeDestroy() {
     const scrollBlock = this.$refs['table-container'];
@@ -141,7 +147,6 @@ export default {
     },
     onResize() {
       this.blockHeight = this.$refs['table-container'].clientHeight;  
-      console.log(this.blockHeight);
     },
   },
 };
@@ -182,5 +187,12 @@ export default {
 .table td {
   border: 1px solid black;
   padding: 5px;
+}
+.scroll-row {
+  height: 35px;
+  border: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 </style>
