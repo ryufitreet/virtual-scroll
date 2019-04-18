@@ -3,6 +3,7 @@
     <div :class="$style['table-column']">
       <div
         ref="scrolled-block"
+        @scroll="onScroll"
         :class="$style['scrolled-block']"
       >
         <div
@@ -122,7 +123,6 @@ export default {
   },
   mounted() {
     const scrollBlock = this.$refs['scrolled-block'];
-    scrollBlock.addEventListener('scroll', this.onScroll);
     window.addEventListener('resize', this.onResize);
     this.onResize();
     const firstRow = this.$refs.table.querySelector('.cluster-container').children[0];
@@ -134,7 +134,6 @@ export default {
   },
   beforeDestroy() {
     const scrollBlock = this.$refs['scrolled-block'];
-    scrollBlock.removeEventListener('scroll', this.onScroll);
     window.removeEventListener('resize', this.onResize);
   },
   methods: {
