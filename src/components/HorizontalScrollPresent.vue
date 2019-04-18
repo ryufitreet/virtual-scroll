@@ -2,28 +2,28 @@
   <div :class="$style['wrapper']">
     <div :class="$style['table-column']">
       <div
-        ref="table-container"
-        :class="$style['table-container']"
+        ref="scrolled-block"
+        :class="$style['scrolled-block']"
       >
         <div
           :class="$style['table']"
+          :style="rowsWrapper"
           ref="table"
         >
-          <!-- <tbody> -->
+          <div
+            class="cluster-container"
+            :style="clusterContainerStyles"
+          >
             <div
-              class="vs-buf-top"
-              :style="topBufferStyles"
+              v-for="row in currentClusterArr"
+              :key="row"
+              :class="$style['scroll-row']"
             >
+              <div>{{row}}</div>
+              <div>C1 {{row}}</div>
+              <div>C2 {{row}}</div>
             </div>
-            <div class="cluster-container">
-              <div v-for="row in currentClusterArr" :key="row" :class="$style['scroll-row']">
-                <div>{{row}}</div>
-                <div>C1 {{row}}</div>
-                <div>C2 {{row}}</div>
-              </div>
-            </div>
-            <div :style="bottomBufferStyles"></div>
-          <!-- </tbody> -->
+          </div>
         </div>
       </div>
     </div>
@@ -41,10 +41,9 @@
           <b>Cluster size:</b>
           {{ clusterSize }}
         </div>
-        <div><b>Height of one Row:</b> {{ heightOfRowPx }}</b></div>
+        <div><b>Height of one Row:</b> {{ heightOfRowPx }}</div>
         <div><b>Full Rows Height size:</b> {{ rowsCount * heightOfRowPx }}</div>
-        <div><b>TopBuffer size:</b> {{ topBufferStyles.height }}</div>
-        <div><b>BottomBuffer size:</b> {{ bottomBufferStyles.height }}</div>
+        <div><b>TopBuffer transform:</b> {{ clusterContainerStyles.transform.match(/(\d+px)/)[0] }}</div>
       </div>
     </div>
   </div>
@@ -76,8 +75,27 @@ export default {
       const { rowsCount, clusterSize } = this;
       return Math.ceil(rowsCount / clusterSize);
     },
+    clusterContainerStyles() {
+      const { clusterSize, currentCluster, heightOfRowPx, countOfClusters, bufferBetweenClusters } = this;
+      let height = 0;
+      if (currentCluster != 0) {
+        height = clusterSize * currentCluster * heightOfRowPx - bufferBetweenClusters * heightOfRowPx;
+      }
+
+      return {
+        transform: `translateY(${height}px)`,
+        willChange: 'transform',
+        pointerEvents: 'none',
+      };
+    },
     bufferBetweenClusters() {
       return this.clusterSize;
+    },
+    rowsWrapper() {
+      return {
+        height: `${this.heightOfRowPx * this.rowsCount}px`,
+        overflow: 'hidden'
+      };
     },
     currentClusterArr() {
       const { arr, currentCluster, clusterSize, bufferBetweenClusters } = this;
@@ -87,26 +105,6 @@ export default {
       }
       const end = start + clusterSize + bufferBetweenClusters;
       return arr.slice(start, end);
-    },
-    topBufferStyles() {
-      const { clusterSize, currentCluster, heightOfRowPx, countOfClusters, bufferBetweenClusters } = this;
-      let height = 0;
-      if (currentCluster != 0) {
-        height = clusterSize * currentCluster * heightOfRowPx - bufferBetweenClusters * heightOfRowPx;
-      }
-      return {height: `${height}px`};
-    },
-    bottomBufferStyles() {
-      const { rowsCount, clusterSize, currentCluster, heightOfRowPx, countOfClusters, bufferBetweenClusters } = this;
-      let height = 0;
-      if (currentCluster < countOfClusters - 1) {
-        const fullHeight = rowsCount * heightOfRowPx;
-        const drawedBottom = currentCluster * clusterSize * heightOfRowPx - bufferBetweenClusters * heightOfRowPx;
-        console.log(drawedBottom);
-        height = fullHeight - drawedBottom;
-      }
-
-      return {height: `${height}px`};
     },
     currentCluster() {
       const { scrollPosition, heightOfRowPx, clusterSize } = this;
@@ -119,11 +117,11 @@ export default {
       if (this.heightOfRowPx == -1) return 1;
       const { blockHeight, heightOfRowPx } = this;
       const countOfRowsIntoBlock = Math.ceil(blockHeight / heightOfRowPx);
-      return countOfRowsIntoBlock * 2;
+      return countOfRowsIntoBlock + Math.ceil(countOfRowsIntoBlock / 2);
     },
   },
   mounted() {
-    const scrollBlock = this.$refs['table-container'];
+    const scrollBlock = this.$refs['scrolled-block'];
     scrollBlock.addEventListener('scroll', this.onScroll);
     window.addEventListener('resize', this.onResize);
     this.onResize();
@@ -132,10 +130,10 @@ export default {
       this.heightOfRowPx = firstRow.offsetHeight;
     } else {
       this.heightOfRowPx = 0;
-    }    
+    }
   },
   beforeDestroy() {
-    const scrollBlock = this.$refs['table-container'];
+    const scrollBlock = this.$refs['scrolled-block'];
     scrollBlock.removeEventListener('scroll', this.onScroll);
     window.removeEventListener('resize', this.onResize);
   },
@@ -146,7 +144,7 @@ export default {
       this.scrollPosition = scrollTop;
     },
     onResize() {
-      this.blockHeight = this.$refs['table-container'].clientHeight;  
+      this.blockHeight = this.$refs['scrolled-block'].clientHeight;  
     },
   },
 };
@@ -165,7 +163,7 @@ export default {
   width: 60%;
   margin-right: 30px;
 }
-.table-container {
+.scrolled-block {
   overflow-y: scroll;
   height: 100%;
 }
@@ -194,5 +192,6 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  pointer-events: none;
 }
 </style>
